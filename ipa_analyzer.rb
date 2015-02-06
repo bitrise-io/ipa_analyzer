@@ -13,7 +13,8 @@ options = {
 	ipa_path: nil,
 	is_verbose: false,
 	is_pretty: false,
-	is_collect_provision_info: false
+	is_collect_provision_info: false,
+	is_collect_info_plist: false
 }
 
 opt_parser = OptionParser.new do |opt|
@@ -27,6 +28,10 @@ opt_parser = OptionParser.new do |opt|
 
 	opt.on("--prov","Collect Provisioning Profile (mobileprovision) information from the IPA") do
 		options[:is_collect_provision_info] = true
+	end
+
+	opt.on("--info-plist","Collect Info.plist information from the IPA") do
+		options[:is_collect_info_plist] = true
 	end
 
 	opt.on("-v","--verbose","Verbose output") do
@@ -57,21 +62,44 @@ def vputs(msg="")
 end
 
 
-def collect_provision_info(zipfile, ipa_path)
-	result = {
-		path_in_ipa: nil,
-		content: {}
-	}
-	mobileprovision_entry = zipfile.find_entry("Payload/#{File.basename(ipa_path, File.extname(ipa_path))}.app/embedded.mobileprovision")
+#
+# Find the .app folder which contains both the "embedded.mobileprovision"
+#  and "Info.plist" files.
+def find_app_folder_in_ipa(zipfile, ipa_path)
+	# Check the most common location
+	app_folder_in_ipa = "Payload/#{File.basename(ipa_path, File.extname(ipa_path))}.app"
+	#
+	mobileprovision_entry = zipfile.find_entry("#{app_folder_in_ipa}/embedded.mobileprovision")
+	info_plist_entry = zipfile.find_entry("#{app_folder_in_ipa}/Info.plist")
+	#
+	if !mobileprovision_entry.nil? and !info_plist_entry.nil?
+		return app_folder_in_ipa
+	end
 
-	if (!mobileprovision_entry)
-		zipfile.dir.entries("Payload").each do |dir_entry|
-			if dir_entry =~ /.app$/
-				mobileprovision_entry = zipfile.find_entry("Payload/#{dir_entry}/embedded.mobileprovision")
+	# It's somewhere else - let's find it!
+	zipfile.dir.entries("Payload").each do |dir_entry|
+		if dir_entry =~ /.app$/
+			mobileprovision_entry = zipfile.find_entry("Payload/#{dir_entry}/embedded.mobileprovision")
+			info_plist_entry = zipfile.find_entry("Payload/#{dir_entry}/Info.plist")
+
+			if !mobileprovision_entry.nil? and !info_plist_entry.nil?
 				break
 			end
 		end
 	end
+
+	if !mobileprovision_entry.nil? and !info_plist_entry.nil?
+		return app_folder_in_ipa
+	end
+	return nil
+end
+
+def collect_provision_info(zipfile, app_folder_path, ipa_path)
+	result = {
+		path_in_ipa: nil,
+		content: {}
+	}
+	mobileprovision_entry = zipfile.find_entry("#{app_folder_path}/embedded.mobileprovision")
 
 	raise "Embedded mobile provisioning file not found in #{ipa_path}" unless mobileprovision_entry
 	vputs "* mobile provisioning: #{mobileprovision_entry}"
@@ -85,6 +113,55 @@ def collect_provision_info(zipfile, ipa_path)
 		plist.each do |key, value|
 			next if key == "DeveloperCertificates"
 
+			vputs
+			vputs "----------------"
+			vputs "key: #{key}"
+			parse_value = nil
+			case value
+			when Hash
+				# parse_value = value.collect{|k, v| "#{k}: #{v}"}.join("\n")
+				parse_value = value
+			when Array
+				# parse_value = value.join("\n")
+				parse_value = value
+			else
+				parse_value = value.to_s
+			end
+			vputs "parse_value: #{parse_value}"
+
+			result[:content][key] = parse_value
+		end
+
+	rescue => e
+		puts e.message
+		exit_code = 1
+	ensure
+		tempfile.close and tempfile.unlink
+	end
+	return result
+end
+
+def collect_info_plist_info(zipfile, app_folder_path, ipa_path)
+	result = {
+		path_in_ipa: nil,
+		content: {}
+	}
+	info_plist_entry = zipfile.find_entry("#{app_folder_path}/Info.plist")
+
+	raise "File 'Info.plist' not found in #{ipa_path}" unless info_plist_entry
+	vputs "* info_plist_entry: #{info_plist_entry}"
+	result[:path_in_ipa] = "#{info_plist_entry}"
+
+	tempfile = Tempfile.new(::File.basename(info_plist_entry.name))
+	begin
+		zipfile.extract(info_plist_entry, tempfile.path){ override = true }
+		# convert from binary Plist to XML Plist
+		unless system("plutil -convert xml1 '#{tempfile.path}'")
+			raise "Failed to convert binary Plist to XML"
+		end
+		plist = Plist::parse_xml(tempfile.path)
+
+		plist.each do |key, value|
 			vputs
 			vputs "----------------"
 			vputs "key: #{key}"
@@ -128,8 +205,14 @@ parsed_infos = {
 exit_code = 0
 
 Zip::File.open(options[:ipa_path]) do |zipfile|
+	app_folder_path = find_app_folder_in_ipa(zipfile, options[:ipa_path])
+	raise "Could not find a valid '.app' folder in the provided IPA" if app_folder_path.nil?
+
 	if options[:is_collect_provision_info]
-		parsed_infos[:mobile_provision] = collect_provision_info(zipfile, options[:ipa_path])
+		parsed_infos[:mobile_provision] = collect_provision_info(zipfile, app_folder_path, options[:ipa_path])
+	end
+	if options[:is_collect_info_plist]
+		parsed_infos[:info_plist] = collect_info_plist_info(zipfile, app_folder_path, options[:ipa_path])
 	end
 end
 
