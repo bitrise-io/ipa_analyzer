@@ -1,0 +1,12 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    plist (3.1.0)
+    rubyzip (1.1.7)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  plist
+  rubyzip
