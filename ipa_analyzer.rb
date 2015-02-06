@@ -119,10 +119,8 @@ def collect_provision_info(zipfile, app_folder_path, ipa_path)
 			parse_value = nil
 			case value
 			when Hash
-				# parse_value = value.collect{|k, v| "#{k}: #{v}"}.join("\n")
 				parse_value = value
 			when Array
-				# parse_value = value.join("\n")
 				parse_value = value
 			else
 				parse_value = value.to_s
@@ -168,10 +166,8 @@ def collect_info_plist_info(zipfile, app_folder_path, ipa_path)
 			parse_value = nil
 			case value
 			when Hash
-				# parse_value = value.collect{|k, v| "#{k}: #{v}"}.join("\n")
 				parse_value = value
 			when Array
-				# parse_value = value.join("\n")
 				parse_value = value
 			else
 				parse_value = value.to_s
