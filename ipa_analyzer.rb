@@ -73,16 +73,19 @@ def find_app_folder_in_ipa(zipfile, ipa_path)
 	info_plist_entry = zipfile.find_entry("#{app_folder_in_ipa}/Info.plist")
 	#
 	if !mobileprovision_entry.nil? and !info_plist_entry.nil?
+		vputs "* .app folder detected at common location: #{app_folder_in_ipa}"
 		return app_folder_in_ipa
 	end
 
 	# It's somewhere else - let's find it!
 	zipfile.dir.entries("Payload").each do |dir_entry|
 		if dir_entry =~ /.app$/
-			mobileprovision_entry = zipfile.find_entry("Payload/#{dir_entry}/embedded.mobileprovision")
-			info_plist_entry = zipfile.find_entry("Payload/#{dir_entry}/Info.plist")
+			app_folder_in_ipa = "Payload/#{dir_entry}"
+			mobileprovision_entry = zipfile.find_entry("#{app_folder_in_ipa}/embedded.mobileprovision")
+			info_plist_entry = zipfile.find_entry("#{app_folder_in_ipa}/Info.plist")
 
 			if !mobileprovision_entry.nil? and !info_plist_entry.nil?
+				vputs "* .app folder detected at: #{app_folder_in_ipa}"
 				break
 			end
 		end
@@ -99,9 +102,10 @@ def collect_provision_info(zipfile, app_folder_path, ipa_path)
 		path_in_ipa: nil,
 		content: {}
 	}
-	mobileprovision_entry = zipfile.find_entry("#{app_folder_path}/embedded.mobileprovision")
+	mobileprovision_path = "#{app_folder_path}/embedded.mobileprovision"
+	mobileprovision_entry = zipfile.find_entry(mobileprovision_path)
 
-	raise "Embedded mobile provisioning file not found in #{ipa_path}" unless mobileprovision_entry
+	raise "Embedded mobile provisioning file not found in (#{ipa_path}) at path (#{mobileprovision_path})" unless mobileprovision_entry
 	vputs "* mobile provisioning: #{mobileprovision_entry}"
 	result[:path_in_ipa] = "#{mobileprovision_entry}"
 
@@ -203,6 +207,7 @@ exit_code = 0
 Zip::File.open(options[:ipa_path]) do |zipfile|
 	app_folder_path = find_app_folder_in_ipa(zipfile, options[:ipa_path])
 	raise "Could not find a valid '.app' folder in the provided IPA" if app_folder_path.nil?
+	vputs "* app_folder_path: #{app_folder_path}"
 
 	if options[:is_collect_provision_info]
 		parsed_infos[:mobile_provision] = collect_provision_info(zipfile, app_folder_path, options[:ipa_path])
