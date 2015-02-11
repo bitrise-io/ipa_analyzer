@@ -1,12 +1,35 @@
+PATH
+  remote: .
+  specs:
+    ipa_analyzer (0.1.0)
+      plist (~> 3.1, >= 3.1.0)
+      rubyzip (~> 1.1.7, >= 1.1.7)
+
 GEM
   remote: https://rubygems.org/
   specs:
+    diff-lcs (1.2.5)
     plist (3.1.0)
+    rake (10.4.2)
+    rspec (3.2.0)
+      rspec-core (~> 3.2.0)
+      rspec-expectations (~> 3.2.0)
+      rspec-mocks (~> 3.2.0)
+    rspec-core (3.2.0)
+      rspec-support (~> 3.2.0)
+    rspec-expectations (3.2.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.2.0)
+    rspec-mocks (3.2.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.2.0)
+    rspec-support (3.2.1)
     rubyzip (1.1.7)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  plist
-  rubyzip
+  ipa_analyzer!
+  rake
+  rspec
