@@ -14,7 +14,12 @@ options = {
   is_verbose: false,
   is_pretty: false,
   is_collect_provision_info: false,
-  is_collect_info_plist: false
+  is_collect_info_plist: false,
+  is_collect_frameworks: false,
+  is_collect_entitlements: false,
+  is_collect_watch: false,
+  is_collect_app_extensions: false,
+  is_collect_all: false
 }
 
 opt_parser = OptionParser.new do |opt|
@@ -24,6 +29,10 @@ opt_parser = OptionParser.new do |opt|
 
   opt.on('-i', '--ipa IPA_PATH', '*IPA file path') do |value|
     options[:ipa_path] = value
+  end
+
+  opt.on('--all', 'Collect maximum information from the IPA') do
+    options[:is_collect_all] = true
   end
 
   opt.on('--prov', 'Collect Provisioning Profile (mobileprovision) information from the IPA') do
@@ -40,6 +49,14 @@ opt_parser = OptionParser.new do |opt|
 
   opt.on('--entitlements', 'Collect Entitlements information from the IPA') do
     options[:is_collect_entitlements] = true
+  end
+
+  opt.on('--appex', 'Collect App Extensions information from the IPA') do
+    options[:is_collect_app_extensions] = true
+  end
+
+  opt.on('--watch', 'Collect Watch information from the IPA') do
+    options[:is_collect_watch] = true
   end
 
   opt.on('-v', '--verbose', 'Verbose output') do
@@ -86,25 +103,35 @@ begin
   vputs ' * Opening the IPA'
   ipa_analyzer.open!
 
-  if options[:is_collect_provision_info]
+  if options[:is_collect_all] || options[:is_collect_provision_info]
     vputs ' * Collecting Provisioning Profile information'
     parsed_infos[:mobileprovision] = ipa_analyzer.collect_provision_info
     raise 'Failed to collect Provisioning Profile information' if parsed_infos[:mobileprovision].nil?
   end
-  if options[:is_collect_info_plist]
+  if options[:is_collect_all] || options[:is_collect_info_plist]
     vputs ' * Collecting Info.plist information'
     parsed_infos[:info_plist] = ipa_analyzer.collect_info_plist_info
     raise 'Failed to collect Info.plist information' if parsed_infos[:info_plist].nil?
   end
 
-  if options[:is_collect_frameworks]
+  if options[:is_collect_all] || options[:is_collect_frameworks]
     vputs ' * Collecting Frameworks information'
     parsed_infos[:frameworks] = ipa_analyzer.collect_frameworks_info
   end
 
-  if options[:is_collect_entitlements]
+  if options[:is_collect_all] || options[:is_collect_entitlements]
     vputs ' * Collecting Entitlements information'
     parsed_infos[:entitlements] = ipa_analyzer.collect_entitlements_info
+  end
+
+  if options[:is_collect_all] || options[:is_collect_watch]
+    vputs ' * Collecting Watch information'
+    parsed_infos[:watch] = ipa_analyzer.collect_watch_info
+  end
+
+  if options[:is_collect_all] || options[:is_collect_app_extensions]
+    vputs ' * Collecting App Extensions information'
+    parsed_infos[:app_extensions] = ipa_analyzer.collect_app_extensions_info
   end
 
 rescue => ex

@@ -26,13 +26,17 @@ module IpaAnalyzer
     end
 
     def collect_provision_info
+      collect_provision_info_with_path("#{@app_folder_path}/")
+    end
+
+    def collect_provision_info_with_path(path)
       raise 'IPA is not open' unless open?
 
       result = {
         path_in_ipa: nil,
         content: {}
       }
-      mobileprovision_path = "#{@app_folder_path}/embedded.mobileprovision"
+      mobileprovision_path = "#{path}embedded.mobileprovision"
       mobileprovision_entry = @ipa_zipfile.find_entry(mobileprovision_path)
 
       raise "Embedded mobile provisioning file not found in (#{@ipa_path}) at path (#{mobileprovision_path})" unless mobileprovision_entry
@@ -41,7 +45,7 @@ module IpaAnalyzer
       tempfile = Tempfile.new(::File.basename(mobileprovision_entry.name))
       begin
         @ipa_zipfile.extract(mobileprovision_entry, tempfile.path) { override = true }
-        plist = Plist.parse_xml(`security cms -D -i #{tempfile.path}`)
+        plist = Plist.parse_xml(`security cms -D -i #{tempfile.path} 2> /dev/null`)
 
         plist.each do |key, value|
           next if key == 'DeveloperCertificates'
@@ -69,17 +73,17 @@ module IpaAnalyzer
     end
 
     def collect_info_plist_info
-      collect_info_plist_info_from_file("#{@app_folder_path}/Info.plist")
+      collect_info_plist_info_with_path("#{@app_folder_path}/Info.plist")
     end
 
-    def collect_info_plist_info_from_file(filename)
+    def collect_info_plist_info_with_path(path)
       raise 'IPA is not open' unless open?
 
       result = {
         path_in_ipa: nil,
         content: {}
       }
-      info_plist_entry = @ipa_zipfile.find_entry(filename)
+      info_plist_entry = @ipa_zipfile.find_entry(path)
 
       raise "File 'Info.plist' not found in #{@ipa_path}" unless info_plist_entry
       result[:path_in_ipa] = info_plist_entry.to_s
@@ -135,7 +139,7 @@ module IpaAnalyzer
         fwk_infoplist_filename = "#{fwk.name}Info.plist"
         fwk_info = {
           filename: fwk_infoplist_filename,
-          content: collect_info_plist_info_from_file(fwk_infoplist_filename)[:content]
+          content: collect_info_plist_info_with_path(fwk_infoplist_filename)[:content]
         }
         result[:content].push(fwk_info)
       end
@@ -143,21 +147,67 @@ module IpaAnalyzer
       result
     end
 
-    # List the contents of the entitlements file included by the package (if any)
     def collect_entitlements_info
+      collect_entitlements_info_with_path("#{@app_folder_path}/")
+    end
+
+    # List the contents of the entitlements file included by the package (if any)
+    def collect_entitlements_info_with_path(path)
       raise 'IPA is not open' unless open?
 
       result = nil
 
-      if !@ipa_zipfile.find_entry("#{@app_folder_path}/Entitlements.plist").nil?
-        result = collect_info_plist_info_from_file("#{@app_folder_path}/Entitlements.plist")
-      elsif !@ipa_zipfile.find_entry("#{@app_folder_path}/archived-expanded-entitlements.xcent").nil?
-        result = collect_info_plist_info_from_file("#{@app_folder_path}/archived-expanded-entitlements.xcent")
+      if !@ipa_zipfile.find_entry("#{path}Entitlements.plist").nil?
+        result = collect_info_plist_info_with_path("#{path}Entitlements.plist")
+      elsif !@ipa_zipfile.find_entry("#{path}archived-expanded-entitlements.xcent").nil?
+        result = collect_info_plist_info_with_path("#{path}archived-expanded-entitlements.xcent")
       else
         vputs 'INFO: No entitlements found'
       end
 
       result
+    end
+
+    # Retrieve info from Watch extension (if any)
+    def collect_watch_info
+      list = collect_app_extensions_info_from_path("#{@app_folder_path}/Watch/", '.app')
+      list ? list.first : nil
+    end
+
+    # Recursive function that collects Info.plist, mobileprovision and entitlements
+    # Recurses on plugins
+    def collect_app_extensions_info_from_path(path, extension)
+      raise 'IPA is not open' unless open?
+
+      search_path = "#{path}*#{extension}"
+      vputs(" * Collecting info.plist, mobileprovision and entitlements from #{search_path}")
+      watch_entries = @ipa_zipfile.glob(search_path)
+
+      return nil if watch_entries.nil? || watch_entries.length.zero?
+
+      result_list = []
+      watch_entries.each do |fwk|
+        result = {
+          path_in_ipa: fwk.name,
+          mobileprovision: {},
+          entitlements: {},
+          info_plist: {},
+          plugins: []
+        }
+        result[:info_plist] = collect_info_plist_info_with_path("#{fwk.name}Info.plist")[:content]
+        result[:mobileprovision] = collect_provision_info_with_path(fwk.name)[:content]
+        result[:entitlements] = collect_entitlements_info_with_path(fwk.name)[:content]
+        plugins = collect_watch_info_from_path("#{fwk.name}PlugIns/", '.appex')
+        result[:plugins].concat(plugins) if !plugins.nil?
+        result_list.push(result)
+      end
+
+      result_list
+    end
+
+    # Detail elements of the App Extensions included by the package (if any)
+    def collect_app_extensions_info
+      collect_app_extensions_info_from_path("#{@app_folder_path}/PlugIns/", '.appex')
     end
 
     private
