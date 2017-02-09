@@ -197,7 +197,7 @@ module IpaAnalyzer
         result[:info_plist] = collect_info_plist_info_with_path("#{fwk.name}Info.plist")[:content]
         result[:mobileprovision] = collect_provision_info_with_path(fwk.name)[:content]
         result[:entitlements] = collect_entitlements_info_with_path(fwk.name)[:content]
-        plugins = collect_watch_info_from_path("#{fwk.name}PlugIns/", '.appex')
+        plugins = collect_app_extensions_info_from_path("#{fwk.name}PlugIns/", '.appex')
         result[:plugins].concat(plugins) if !plugins.nil?
         result_list.push(result)
       end
