@@ -3,111 +3,152 @@
 require 'optparse'
 require 'json'
 
-$:.push File.expand_path("../../lib", __FILE__)
+$LOAD_PATH.push File.expand_path('../../lib', __FILE__)
 require 'ipa_analyzer'
-
 
 # -------------------------
 # --- Options
 
 options = {
-	ipa_path: nil,
-	is_verbose: false,
-	is_pretty: false,
-	is_collect_provision_info: false,
-	is_collect_info_plist: false
+  ipa_path: nil,
+  is_verbose: false,
+  is_pretty: false,
+  is_collect_provision_info: false,
+  is_collect_info_plist: false,
+  is_collect_frameworks: false,
+  is_collect_entitlements: false,
+  is_collect_watch: false,
+  is_collect_app_extensions: false,
+  is_collect_all: false
 }
 
 opt_parser = OptionParser.new do |opt|
-	opt.banner = "Usage: ipa_analyzer.rb [OPTIONS]"
-	opt.separator  ""
-	opt.separator  "Options, the ones marked with * are required"
+  opt.banner = 'Usage: ipa_analyzer.rb [OPTIONS]'
+  opt.separator  ''
+  opt.separator  'Options, the ones marked with * are required'
 
-	opt.on("-i","--ipa IPA_PATH", "*IPA file path") do |value|
-		options[:ipa_path] = value
-	end
+  opt.on('-i', '--ipa IPA_PATH', '*IPA file path') do |value|
+    options[:ipa_path] = value
+  end
 
-	opt.on("--prov","Collect Provisioning Profile (mobileprovision) information from the IPA") do
-		options[:is_collect_provision_info] = true
-	end
+  opt.on('--all', 'Collect maximum information from the IPA') do
+    options[:is_collect_all] = true
+  end
 
-	opt.on("--info-plist","Collect Info.plist information from the IPA") do
-		options[:is_collect_info_plist] = true
-	end
+  opt.on('--prov', 'Collect Provisioning Profile (mobileprovision) information from the IPA') do
+    options[:is_collect_provision_info] = true
+  end
 
-	opt.on("-v","--verbose","Verbose output") do
-		options[:is_verbose] = true
-	end
+  opt.on('--info-plist', 'Collect Info.plist information from the IPA') do
+    options[:is_collect_info_plist] = true
+  end
 
-	opt.on("-p","--pretty","Pretty print output") do
-		options[:is_pretty] = true
-	end
+  opt.on('--frameworks', 'Collect Frameworks information from the IPA') do
+    options[:is_collect_frameworks] = true
+  end
 
-	opt.on("-h","--help","Shows this help message") do
-		puts opt_parser
-		exit 0
-	end
+  opt.on('--entitlements', 'Collect Entitlements information from the IPA') do
+    options[:is_collect_entitlements] = true
+  end
+
+  opt.on('--appex', 'Collect App Extensions information from the IPA') do
+    options[:is_collect_app_extensions] = true
+  end
+
+  opt.on('--watch', 'Collect Watch information from the IPA') do
+    options[:is_collect_watch] = true
+  end
+
+  opt.on('-v', '--verbose', 'Verbose output') do
+    options[:is_verbose] = true
+  end
+
+  opt.on('-p', '--pretty', 'Pretty print output') do
+    options[:is_pretty] = true
+  end
+
+  opt.on('-h', '--help', 'Shows this help message') do
+    puts opt_parser
+    exit 0
+  end
 end
 
 opt_parser.parse!
 $options = options
 
-
 # -------------------------
 # --- Utils
 
-def vputs(msg="")
-	if $options[:is_verbose]
-		puts msg
-	end
+def vputs(msg = '')
+  puts msg if $options[:is_verbose]
 end
-
 
 # -------------------------
 # --- Main
 
 vputs "options: #{options}"
 
-raise "No IPA specified" unless options[:ipa_path]
-raise "IPA specified but file does not exist at the provided path" unless File.exist? options[:ipa_path]
+raise 'No IPA specified' unless options[:ipa_path]
+raise 'IPA specified but file does not exist at the provided path' unless File.exist? options[:ipa_path]
 
 parsed_infos = {
-	mobileprovision: nil,
-	info_plist: nil
+  mobileprovision: nil,
+  info_plist: nil
 }
 
 exit_code = 0
 
 ipa_analyzer = IpaAnalyzer::Analyzer.new(options[:ipa_path])
 begin
-	vputs " * Opening the IPA"
-	ipa_analyzer.open!
+  vputs ' * Opening the IPA'
+  ipa_analyzer.open!
 
-	if options[:is_collect_provision_info]
-		vputs " * Collecting Provisioning Profile information"
-		parsed_infos[:mobileprovision] = ipa_analyzer.collect_provision_info()
-		raise "Failed to collect Provisioning Profile information" if parsed_infos[:mobileprovision].nil?
-	end
-	if options[:is_collect_info_plist]
-		vputs " * Collecting Info.plist information"
-		parsed_infos[:info_plist] = ipa_analyzer.collect_info_plist_info()
-		raise "Failed to collect Info.plist information" if parsed_infos[:info_plist].nil?
-	end
+  if options[:is_collect_all] || options[:is_collect_provision_info]
+    vputs ' * Collecting Provisioning Profile information'
+    parsed_infos[:mobileprovision] = ipa_analyzer.collect_provision_info
+    raise 'Failed to collect Provisioning Profile information' if parsed_infos[:mobileprovision].nil?
+  end
+  if options[:is_collect_all] || options[:is_collect_info_plist]
+    vputs ' * Collecting Info.plist information'
+    parsed_infos[:info_plist] = ipa_analyzer.collect_info_plist_info
+    raise 'Failed to collect Info.plist information' if parsed_infos[:info_plist].nil?
+  end
+
+  if options[:is_collect_all] || options[:is_collect_frameworks]
+    vputs ' * Collecting Frameworks information'
+    parsed_infos[:frameworks] = ipa_analyzer.collect_frameworks_info
+  end
+
+  if options[:is_collect_all] || options[:is_collect_entitlements]
+    vputs ' * Collecting Entitlements information'
+    parsed_infos[:entitlements] = ipa_analyzer.collect_entitlements_info
+  end
+
+  if options[:is_collect_all] || options[:is_collect_watch]
+    vputs ' * Collecting Watch information'
+    parsed_infos[:watch] = ipa_analyzer.collect_watch_info
+  end
+
+  if options[:is_collect_all] || options[:is_collect_app_extensions]
+    vputs ' * Collecting App Extensions information'
+    parsed_infos[:app_extensions] = ipa_analyzer.collect_app_extensions_info
+  end
+
 rescue => ex
-	puts
-	puts "Failed: #{ex}"
-	puts
-	exit_code = 1
-	raise ex
+  puts
+  puts "Failed: #{ex}"
+  puts
+  exit_code = 1
+  raise ex
 ensure
-	vputs " * Closing the IPA"
-	ipa_analyzer.close()
+  vputs ' * Closing the IPA'
+  ipa_analyzer.close
 end
 
 if options[:is_pretty]
-	puts JSON.pretty_generate(parsed_infos)
+  puts JSON.pretty_generate(parsed_infos)
 else
-	puts JSON.generate(parsed_infos)
+  puts JSON.generate(parsed_infos)
 end
 
 exit exit_code
