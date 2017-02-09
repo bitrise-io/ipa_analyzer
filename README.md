@@ -20,10 +20,14 @@ Or install it as a system-wide GEM / CLI:
 
 If used as a CLI:
 
-    ipa_analyzer -i /path/to/app.ipa -p --info-plist --prov
+    ipa_analyzer -i /path/to/app.ipa -p --info-plist --prov --entitlements --frameworks
 
-This will collect and print both the embedded mobileprovisioning
-and the Info.plist, in a pretty printed JSON output.
+This will collect and print:
+* the embedded mobileprovisioning,
+* the Info.plist, 
+* the entitlements (from the Entitlements.plist or archived-expanded-entitlements.xcent files) if any,
+* the list of frameworks if any
+in a pretty printed JSON output.
 
 The output of this command looks like this:
 
@@ -106,6 +110,82 @@ The output of this command looks like this:
             "UIInterfaceOrientationPortraitUpsideDown",
             "UIInterfaceOrientationLandscapeLeft",
             "UIInterfaceOrientationLandscapeRight"
+          ]
+        }
+      },
+      "frameworks": {
+        "path_in_ipa": "Payload/MyApp.app/Frameworks",
+        "content": [
+          {
+            "filename": "Payload/MyApp.app/Frameworks/PodExample1.framework/Info.plist",
+            "content": {
+              "BuildMachineOSBuild": "14F27",
+              "CFBundleDevelopmentRegion": "en",
+              "CFBundleExecutable": "PodExample1",
+              "CFBundleIdentifier": "org.cocoapods.PodExample1",
+              "CFBundleInfoDictionaryVersion": "6.0",
+              "CFBundleName": "PodExample1",
+              "CFBundlePackageType": "FMWK",
+              "CFBundleShortVersionString": "3.1.2",
+              "CFBundleSignature": "????",
+              "CFBundleSupportedPlatforms": [
+                "iPhoneOS"
+              ],
+              "CFBundleVersion": "1",
+              "DTCompiler": "com.apple.compilers.llvm.clang.1_0",
+              "DTPlatformBuild": "13C75",
+              "DTPlatformName": "iphoneos",
+              "DTPlatformVersion": "9.2",
+              "DTSDKBuild": "13C75",
+              "DTSDKName": "iphoneos9.2",
+              "DTXcode": "0720",
+              "DTXcodeBuild": "7C68",
+              "MinimumOSVersion": "9.0",
+              "UIDeviceFamily": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "filename": "Payload/MyApp.app/Frameworks/PodExample2.framework/Info.plist",
+            "content": {
+              "BuildMachineOSBuild": "14F27",
+              "CFBundleDevelopmentRegion": "en",
+              "CFBundleExecutable": "PodExample2",
+              "CFBundleIdentifier": "org.cocoapods.PodExample2",
+              "CFBundleInfoDictionaryVersion": "6.0",
+              "CFBundleName": "PodExample2",
+              "CFBundlePackageType": "FMWK",
+              "CFBundleShortVersionString": "2.3.2",
+              "CFBundleSignature": "????",
+              "CFBundleSupportedPlatforms": [
+                "iPhoneOS"
+              ],
+              "CFBundleVersion": "1",
+              "DTCompiler": "com.apple.compilers.llvm.clang.1_0",
+              "DTPlatformBuild": "13C75",
+              "DTPlatformName": "iphoneos",
+              "DTPlatformVersion": "9.2",
+              "DTSDKBuild": "13C75",
+              "DTSDKName": "iphoneos9.2",
+              "DTXcode": "0720",
+              "DTXcodeBuild": "7C68",
+              "MinimumOSVersion": "9.0",
+              "UIDeviceFamily": [
+                1,
+                2
+              ]
+            }
+          }
+        ]
+      },
+      "entitlements": {
+        "path_in_ipa": "Payload/MyApp.app/Entitlements.plist",
+        "content": {
+          "application-identifier": "XXXA8V3XXX.com.company.MyApp",
+          "keychain-access-groups": [
+            "XXXA8V3XXX.com.company.MyApp"
           ]
         }
       }
