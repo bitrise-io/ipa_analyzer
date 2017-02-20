@@ -42,7 +42,9 @@ The output of this command looks like this:
             "issuer_raw": "subject= /UID=XXXXXXXXXX/CN=iPhone Distribution: COMPANY (XXXXXXXXXX)/OU=XXXXXXXXXX/O=COMPANY/C=US\n",
             "cn": "iPhone Distribution: COMPANY (XXXXXXXXXX)",
             "uid": "XXXXXXXXXX",
-            "org": "COMPANY"
+            "org": "COMPANY",
+            "expiration_date": "Mar 10 00:00:01 2016 GMT",
+            "creation_date": "Mar 10 00:00:01 2017 GMT"
           },
           "Entitlements": {
             "application-identifier": "XXXA8V3XXX.*",
