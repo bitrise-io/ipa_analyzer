@@ -25,6 +25,39 @@ module IpaAnalyzer
       @ipa_zipfile.close if open?
     end
 
+    def cert_extract_parametrized(subject, param)
+      match = %r{\/#{Regexp.quote(param)}=([^\/]*)}.match(subject)
+      match.captures[0]
+    end
+
+    def cert_issuer_extract_common_name(subject)
+      cert_extract_parametrized(subject, 'CN')
+    end
+
+    def cert_issuer_extract_unique_id(subject)
+      cert_extract_parametrized(subject, 'UID')
+    end
+
+    def cert_issuer_extract_organization(subject)
+      cert_extract_parametrized(subject, 'O')
+    end
+
+    def collect_cert_info(base64data)
+      result = {
+        issuer_raw: nil,
+        cn: nil,
+        uid: nil,
+        org: nil
+      }
+      data_as_hex = base64data.first.string.each_byte.map { |b| b.to_s(16).rjust(2,'0') }.join
+      subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject`
+      result[:issuer_raw] = subject
+      result[:cn] = cert_issuer_extract_common_name(subject)
+      result[:uid] = cert_issuer_extract_unique_id(subject)
+      result[:org] = cert_issuer_extract_organization(subject)
+      result
+    end
+
     def collect_provision_info
       raise 'IPA is not open' unless open?
 
@@ -44,7 +77,10 @@ module IpaAnalyzer
         plist = Plist.parse_xml(`security cms -D -i #{tempfile.path}`)
 
         plist.each do |key, value|
-          next if key == 'DeveloperCertificates'
+          if key == 'DeveloperCertificates'
+            result[:content][:cert_info] = collect_cert_info(value)
+            next
+          end
 
           parse_value = nil
           parse_value = case value
