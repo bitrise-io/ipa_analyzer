@@ -25,21 +25,31 @@ module IpaAnalyzer
       @ipa_zipfile.close if open?
     end
 
-    def cert_extract_parametrized(subject, param)
+    def cert_extract_issuer_parameterized(subject, param)
       match = %r{\/#{Regexp.quote(param)}=([^\/]*)}.match(subject)
       match.captures[0]
     end
 
-    def cert_issuer_extract_common_name(subject)
-      cert_extract_parametrized(subject, 'CN')
+    def cert_extract_issuer(data_as_hex, result)
+      subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject`
+      result[:issuer_raw] = subject
+      result[:cn] = cert_extract_issuer_parameterized(subject, 'CN')
+      result[:uid] = cert_extract_issuer_parameterized(subject, 'UID')
+      result[:org] = cert_extract_issuer_parameterized(subject, 'O')
     end
 
-    def cert_issuer_extract_unique_id(subject)
-      cert_extract_parametrized(subject, 'UID')
+    def cert_extract_date(date_str)
+      puts date_str
+      match = /=(.*)$/.match(date_str)
+      match.captures[0]
     end
 
-    def cert_issuer_extract_organization(subject)
-      cert_extract_parametrized(subject, 'O')
+    def cert_extract_dates(data_as_hex, result)
+      start_date = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -startdate`
+      end_date = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -enddate`
+
+      result[:expiration_date] = cert_extract_date(start_date)
+      result[:creation_date] = cert_extract_date(end_date)
     end
 
     def collect_cert_info(base64data)
@@ -47,14 +57,13 @@ module IpaAnalyzer
         issuer_raw: nil,
         cn: nil,
         uid: nil,
-        org: nil
+        org: nil,
+        expiration_date: nil,
+        creation_date: nil
       }
       data_as_hex = base64data.first.string.each_byte.map { |b| b.to_s(16).rjust(2,'0') }.join
-      subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject`
-      result[:issuer_raw] = subject
-      result[:cn] = cert_issuer_extract_common_name(subject)
-      result[:uid] = cert_issuer_extract_unique_id(subject)
-      result[:org] = cert_issuer_extract_organization(subject)
+      cert_extract_issuer(data_as_hex, result)
+      cert_extract_dates(data_as_hex, result)
       result
     end
 
