@@ -14,7 +14,8 @@ Or install it as a system-wide GEM / CLI:
 
     gem install ipa_analyzer
 
-
+Please review the requirements section at the bottom of this file if you 
+experience issues with the software.
 
 ## Usage example
 
@@ -24,6 +25,8 @@ If used as a CLI:
 
 This will collect and print both the embedded mobileprovisioning
 and the Info.plist, in a pretty printed JSON output.
+Information about the certificate is included as a child object
+of mobileprovision content.
 
 The output of this command looks like this:
 
@@ -36,6 +39,14 @@ The output of this command looks like this:
             "XXXA8V3XXX"
           ],
           "CreationDate": "2014-05-10T11:57:32+00:00",
+          "cert_info": {
+            "issuer_raw": "subject= UID=XXXXXXXXXX, CN=iPhone Distribution: COMPANY (XXXXXXXXXX), OU=XXXXXXXXXX, O=COMPANY, C=US\n",
+            "cn": "iPhone Distribution: COMPANY (XXXXXXXXXX)",
+            "uid": "XXXXXXXXXX",
+            "org": "COMPANY",
+            "expiration_date": "Mar 10 00:00:01 2016 GMT",
+            "creation_date": "Mar 10 00:00:01 2017 GMT"
+          },
           "Entitlements": {
             "application-identifier": "XXXA8V3XXX.*",
             "get-task-allow": true,
@@ -115,3 +126,4 @@ The output of this command looks like this:
 ## Requirements
 
 * OS: OS X (tested on 10.10 Yosemite)
+* OpenSSL: version 1.0.2g (1 Mar 2016) or greater
