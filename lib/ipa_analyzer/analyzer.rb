@@ -26,12 +26,16 @@ module IpaAnalyzer
     end
 
     def cert_extract_issuer_parameterized(subject, param)
-      match = %r{\/#{Regexp.quote(param)}=([^\/]*)}.match(subject)
+      # The following regex was previously used to match fields when not 
+      # using '-nameopt -esc_msb,utf8'' switch with openssl
+      # match = %r{\/#{Regexp.quote(param)}=([^\/]*)}.match(subject) 
+
+      match = /#{Regexp.quote(param)}=([^=]*)(, [A-Z]+=|$)/.match(subject)
       match.captures[0]
     end
 
     def cert_extract_issuer(data_as_hex, result)
-      subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject`
+      subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject -nameopt -esc_msb,utf8`
       result[:issuer_raw] = subject
       result[:cn] = cert_extract_issuer_parameterized(subject, 'CN')
       result[:uid] = cert_extract_issuer_parameterized(subject, 'UID')
@@ -39,7 +43,6 @@ module IpaAnalyzer
     end
 
     def cert_extract_date(date_str)
-      puts date_str
       match = /=(.*)$/.match(date_str)
       match.captures[0]
     end
