@@ -31,19 +31,25 @@ module IpaAnalyzer
       # match = %r{\/#{Regexp.quote(param)}=([^\/]*)}.match(subject) 
 
       match = /#{Regexp.quote(param)}=([^=]*)(, [A-Z]+=|$)/.match(subject)
+      raise "Could not retrieve field '#{param}' from certificate info" if match.nil? || match.captures.nil? || match.captures.empty?
       match.captures[0]
     end
 
     def cert_extract_issuer(data_as_hex, result)
       subject = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -subject -nameopt -esc_msb,utf8`
-      result[:issuer_raw] = subject
-      result[:cn] = cert_extract_issuer_parameterized(subject, 'CN')
-      result[:uid] = cert_extract_issuer_parameterized(subject, 'UID')
-      result[:org] = cert_extract_issuer_parameterized(subject, 'O')
+      begin
+        result[:issuer_raw] = subject
+        result[:cn] = cert_extract_issuer_parameterized(subject, 'CN')
+        result[:uid] = cert_extract_issuer_parameterized(subject, 'UID')
+        result[:org] = cert_extract_issuer_parameterized(subject, 'O')
+      rescue => e
+        result[:error_msg] = "#{e.message}. Please check the openssl version installed on your system"
+      end
     end
 
     def cert_extract_date(date_str)
       match = /=(.*)$/.match(date_str)
+      raise "Could not retrieve date from certificate info" if match.nil? || match.captures.nil? || match.captures.empty?
       match.captures[0]
     end
 
@@ -51,8 +57,12 @@ module IpaAnalyzer
       start_date = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -startdate`
       end_date = `echo #{data_as_hex} | xxd -r -p | openssl x509 -inform DER -noout -enddate`
 
-      result[:expiration_date] = cert_extract_date(start_date)
-      result[:creation_date] = cert_extract_date(end_date)
+      begin
+        result[:expiration_date] = cert_extract_date(start_date)
+        result[:creation_date] = cert_extract_date(end_date)
+      rescue => e
+        result[:error_msg] = "#{e.message}. Please check the openssl version installed on your system"
+      end
     end
 
     def collect_cert_info(base64data)
