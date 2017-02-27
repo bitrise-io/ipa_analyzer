@@ -9,8 +9,14 @@ workflows:
   ci:
     steps:
     - script:
-        title: Rubocop
+        title: bundle install
         inputs:
-        - content: |-
-            #!/bin/bash
-            rubocop
+        - content: bundle install
+    - script:
+        title: rubocop
+        inputs:
+        - content: bundle exec rubocop
+    - script:
+        title: rspec
+        inputs:
+        - content: bundle exec rspec

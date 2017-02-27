@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'rubyzip', '~> 1.1.7', '>= 1.1.7'
 
   s.add_development_dependency "rspec"
+  s.add_development_dependency "rubocop"
   s.add_development_dependency "rake"
 
   s.files         = Dir["./**/*"].reject { |file| file =~ /\.\/(bin|log|pkg|script|spec|test|vendor)/ }
