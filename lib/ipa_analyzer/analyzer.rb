@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'tempfile'
 require 'zip'
 require 'zip/filesystem'
@@ -37,6 +39,7 @@ module IpaAnalyzer
       mobileprovision_entry = @ipa_zipfile.find_entry(mobileprovision_path)
 
       raise "Embedded mobile provisioning file not found in (#{@ipa_path}) at path (#{mobileprovision_path})" unless mobileprovision_entry
+
       result[:path_in_ipa] = mobileprovision_entry.to_s
 
       tempfile = Tempfile.new(::File.basename(mobileprovision_entry.name))
@@ -51,8 +54,7 @@ module IpaAnalyzer
 
           result[:content][key] = parse_value
         end
-
-      rescue => e
+      rescue StandardError => e
         puts e.message
         result = nil
       ensure
@@ -71,15 +73,15 @@ module IpaAnalyzer
       info_plist_entry = @ipa_zipfile.find_entry("#{@app_folder_path}/Info.plist")
 
       raise "File 'Info.plist' not found in #{@ipa_path}" unless info_plist_entry
+
       result[:path_in_ipa] = info_plist_entry.to_s
 
       tempfile = Tempfile.new(::File.basename(info_plist_entry.name))
       begin
         @ipa_zipfile.extract(info_plist_entry, tempfile.path) { true }
         # convert from binary Plist to XML Plist
-        unless system("plutil -convert xml1 '#{tempfile.path}'")
-          raise 'Failed to convert binary Plist to XML'
-        end
+        raise 'Failed to convert binary Plist to XML' unless system("plutil -convert xml1 '#{tempfile.path}'")
+
         plist = Plist.parse_xml(tempfile.path)
 
         plist.each do |key, value|
@@ -87,8 +89,7 @@ module IpaAnalyzer
 
           result[:content][key] = parse_value
         end
-
-      rescue => e
+      rescue StandardError => e
         puts e.message
         result = nil
       ensure
@@ -107,13 +108,11 @@ module IpaAnalyzer
 
       # Check the most common location
       app_folder_in_ipa = "Payload/#{File.basename(@ipa_path, File.extname(@ipa_path))}.app"
-      #
+
       mobileprovision_entry = @ipa_zipfile.find_entry("#{app_folder_in_ipa}/embedded.mobileprovision")
       info_plist_entry = @ipa_zipfile.find_entry("#{app_folder_in_ipa}/Info.plist")
-      #
-      if !mobileprovision_entry.nil? && !info_plist_entry.nil?
-        return app_folder_in_ipa
-      end
+
+      return app_folder_in_ipa if !mobileprovision_entry.nil? && !info_plist_entry.nil?
 
       # It's somewhere else - let's find it!
       @ipa_zipfile.dir.entries('Payload').each do |dir_entry|
@@ -126,9 +125,8 @@ module IpaAnalyzer
         break if !mobileprovision_entry.nil? && !info_plist_entry.nil?
       end
 
-      if !mobileprovision_entry.nil? && !info_plist_entry.nil?
-        return app_folder_in_ipa
-      end
+      return app_folder_in_ipa if !mobileprovision_entry.nil? && !info_plist_entry.nil?
+
       return nil
     end
   end

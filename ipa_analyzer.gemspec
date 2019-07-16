@@ -1,5 +1,6 @@
-# -*- encoding: utf-8 -*-
-$:.push File.expand_path('../lib', __FILE__)
+# frozen_string_literal: true
+
+$:.push File.expand_path('lib', __dir__)
 
 require 'ipa_analyzer/version'
 
@@ -17,9 +18,9 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'plist', '~> 3.1', '>= 3.1.0'
   s.add_runtime_dependency 'rubyzip', '~> 1.1', '>= 1.1.7'
 
+  s.add_development_dependency 'rake'
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'rubocop'
-  s.add_development_dependency 'rake'
 
   s.files         = Dir['./**/*'].reject { |file| file =~ %r{./(bin|log|pkg|script|spec|test|vendor)} }
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

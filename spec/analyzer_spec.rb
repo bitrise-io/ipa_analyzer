@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative './../lib/ipa_analyzer/analyzer'
 
 describe IpaAnalyzer::Analyzer do
@@ -71,8 +73,8 @@ describe IpaAnalyzer::Analyzer do
       expect(content['UILaunchStoryboardName']).to eq('LaunchScreen')
       expect(content['UIMainStoryboardFile']).to eq('Main')
       expect(content['UIRequiredDeviceCapabilities']).to eq(['armv7'])
-      expect(content['UISupportedInterfaceOrientations']).to eq(%w(UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight))
-      expect(content['UISupportedInterfaceOrientations~ipad']).to eq(%w(UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight))
+      expect(content['UISupportedInterfaceOrientations']).to eq(%w[UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight])
+      expect(content['UISupportedInterfaceOrientations~ipad']).to eq(%w[UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight])
     end
   end
 end
