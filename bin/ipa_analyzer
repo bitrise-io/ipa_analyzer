@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 #!/usr/bin/env ruby
 
 require 'optparse'
 require 'json'
 
-$:.push File.expand_path('../../lib', __FILE__)
+$:.push File.expand_path('../lib', __dir__)
 require 'ipa_analyzer'
 
 # -------------------------
